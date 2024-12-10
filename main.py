@@ -6,33 +6,50 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-env = Environment(
-    loader=FileSystemLoader('.'),
-    autoescape=select_autoescape(['html', 'xml'])
-)
 
-template = env.get_template('template.html')
+def render_page(excel_result, year_now, year_opening):
+    env = Environment(
+        loader=FileSystemLoader('.'),
+        autoescape=select_autoescape(['html', 'xml'])
+    )
 
-excel_data_df = pd.read_excel(
-    io='wine3.xlsx',
-    sheet_name="Лист1",
-    na_values=['N/A', 'NA'], keep_default_na=False
-)
-open_table = excel_data_df.to_dict(orient='records')
-create_category_wine = collections.defaultdict(list)
+    template = env.get_template('template.html')
 
-for wine in open_table:
-    create_category_wine[wine["Категория"]].append(wine)
+    products = excel_result
+    grouped_wines = collections.defaultdict(list)
 
-category_wine = OrderedDict(create_category_wine)
-category_wine.move_to_end('Напитки')
+    for wine in products:
+        grouped_wines[wine["Категория"]].append(wine)
 
-now = datetime.datetime.now().year
+    wine_sorting = OrderedDict(grouped_wines)
+    wine_sorting.move_to_end('Напитки')
 
-rendered_page = template.render(wine_information=category_wine, years=f"Уже {now - 1920} года с вами")
+    page = template.render(wine_information=wine_sorting, years=f"Уже {year_now - year_opening} года с вами")
 
-with open('index.html', 'w', encoding="utf8") as file:
-    file.write(rendered_page)
+    with open('index.html', 'w', encoding="utf8") as file:
+        file.write(page)
 
-server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
-server.serve_forever()
+
+def read_excel(file_path):
+    excel = pd.read_excel(
+        io=file_path,
+        sheet_name="Лист1",
+        na_values=['N/A', 'NA'], keep_default_na=False
+    ).to_dict(orient='records')
+    return excel
+
+
+def main():
+    user_file = input("Введите путь до файла эксель: ")
+    file_path = user_file if user_file else "wine.xlsx"
+    year_now = datetime.datetime.now().year
+    year_opening = 1920
+    excel_result = read_excel(file_path)
+    render_page(excel_result, year_now, year_opening)
+
+    server = HTTPServer(('0.0.0.0', 8000), SimpleHTTPRequestHandler)
+    server.serve_forever()
+
+
+if __name__ == '__main__':
+    main()
