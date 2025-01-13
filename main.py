@@ -20,9 +20,20 @@ def sort_table(excel_result):
     return sorted_wines
 
 
+def choosing_right_word(years_passed):
+    if years_passed % 10 == 1 and years_passed % 100 != 11:
+        return "год"
+    elif 2 <= years_passed % 10 <= 4 and not (12 <= years_passed % 100 <= 14):
+        return "года"
+    else:
+        return "лет"
+
+
 def get_year(year_opening):
     year_now = datetime.datetime.now().year
-    formatted_date = f"Уже {year_now - year_opening} года с вами"
+    years_passed = year_now - year_opening
+    word = choosing_right_word(years_passed)
+    formatted_date = f"Уже {years_passed} {word} с вами"
     return formatted_date
 
 
